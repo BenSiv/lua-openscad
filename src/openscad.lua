@@ -1,4 +1,5 @@
 local shapes = require("shapes")
+local transformations = require("transformations")
 
 -- Define a module table
 local openscad = {}
@@ -55,7 +56,14 @@ local function encode(t, indent_level)
 end
 
 openscad.encode = encode
+
 openscad.circle = shapes.circle
+openscad.sphere = shapes.sphere
+openscad.cylinder = shapes.cylinder
+openscad.square = shapes.square
+openscad.cube = shapes.cube
+
+openscad.translate = transformations.translate
 
 -- Export the module
 return openscad

@@ -63,7 +63,7 @@ local function cylinder(height, radius1, radius2)
     return result
 end
 
-ocal function cube(size)
+local function cube(size)
     -- Determine if size is a single value (for a cube) or a table (for a rectangular prism)
     local width, depth, height
     if type(size) == "number" then
