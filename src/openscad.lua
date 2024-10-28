@@ -100,10 +100,23 @@ local function boolean(action, objects)
     }
 end
 
+-- write openscad source code file
+local function write(path, content, resolution)
+    local file = io.open(path, "w")
+    if file then
+        file:write("$fn = " .. resolution .. ";\n")
+        file:write(content)
+        file:close()
+    else
+        print("Failed to open " .. path)
+    end
+end
+
 openscad.encode = encode
 openscad.create = create
 openscad.transform = transform
 openscad.boolean = boolean
+openscad.write = write
 
 -- Export the module
 return openscad
