@@ -1,41 +1,45 @@
+require("utils").using("utils")
+
 -- Define a module table
 local openscad = {}
 
--- Helper function to convert parameters into a string
+-- Helper function to convert parameters into an OpenSCAD-compatible string
 local function params_to_string(params)
-    if not params or next(params) == nil then
-        return "()" -- Ensure empty parentheses for nil or empty parameters
-    elseif #params > 0 then
-        -- If the parameters are a list (array)
-        local parts = {}
-        for _, v in ipairs(params) do
-            table.insert(parts, tostring(v))
+    local param_str = ""
+    local parts = {}
+    if not params or type(params) ~= "table" then
+        -- do nothing
+    elseif is_array(params) and length(params) > 0 then
+        for _, value in ipairs(params) do
+            if type(value) == "table" then
+                table.insert(parts, params_to_string(value))
+            else
+                table.insert(parts, tostring(value))
+            end
         end
-        return "(" .. "[" .. table.concat(parts, ", ") .. "]" .. ")"
+        param_str = "[" .. table.concat(parts, ", ") .. "]"
     else
-        -- If the parameters are a key-value table
-        local parts = {}
-        for k, v in pairs(params) do
-            table.insert(parts, k .. "=" .. tostring(v))
+        for key, value in pairs(params) do
+            table.insert(parts, key .. "=" .. tostring(value))
         end
-        return "(" .. table.concat(parts, ", ") .. ")"
+        param_str = table.concat(parts, ", ")
     end
+    return param_str
 end
-                
+
 -- The encode function to convert Lua tables into OpenSCAD code
 local function encode(tbl, indent_level)
     indent_level = indent_level or 0
-    local indent = string.rep("    ", indent_level) -- 4 spaces per indent
+    local indent = string.rep("    ", indent_level)
 
-    -- Start building the OpenSCAD code string
     local openscad_code = ""
 
     for key, value in pairs(tbl) do
         local params = value.params or {}
         local inputs = value.inputs or {}
 
-        -- Add the current OpenSCAD function with parameters
-        local param_str = params_to_string(params)
+        local param_str = "(" .. params_to_string(params) .. ")"
+
         openscad_code = openscad_code .. indent .. key .. param_str
 
         if next(inputs) then
@@ -49,9 +53,10 @@ local function encode(tbl, indent_level)
         openscad_code = openscad_code .. ";\n"
     end
 
-    return openscad_code:sub(1, -2)  -- Remove the last extra newline
+    return openscad_code:sub(1, -2) -- Remove the last extra newline
 end
 
+-- Function to create a shape with parameters
 local function create(shape, params)
     if type(shape) ~= "string" then
         error("Shape must be a string.")
@@ -61,8 +66,7 @@ local function create(shape, params)
         error("Params must be a table.")
     end
 
-    obj = {[shape] = {params = params}}
-    return obj
+    return {[shape] = {params = params}}
 end
 
 local function transform(action, obj, params)
@@ -104,8 +108,26 @@ end
 local function write(path, content, resolution)
     local file = io.open(path, "w")
     if file then
-        file:write("$fn = " .. resolution .. ";\n")
+        if resolution then
+            file:write("$fn = " .. resolution .. ";\n\n")
+        end
         file:write(content)
+        file:write("\n\n")
+        file:close()
+    else
+        print("Failed to open " .. path)
+    end
+end
+
+-- append openscad source code file
+local function append(path, content, resolution)
+    local file = io.open(path, "a")
+    if file then
+        if resolution then
+            file:write("\n$fn = " .. resolution .. ";\n\n")
+        end
+        file:write(content)
+        file:write("\n")
         file:close()
     else
         print("Failed to open " .. path)
@@ -117,6 +139,7 @@ openscad.create = create
 openscad.transform = transform
 openscad.boolean = boolean
 openscad.write = write
+openscad.append = append
 
 -- Export the module
 return openscad
